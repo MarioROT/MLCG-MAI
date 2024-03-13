@@ -36,7 +36,8 @@ class Integrator(ABC):
         print('Rendering Image: ' + self.get_filename())
         for x in range(0, cam.width):
             for y in range(0, cam.height):
-                pixel = RGBColor(x/cam.width, y/cam.height, 0)
+                # pixel = RGBColor(x/cam.width, y/cam.height, 0)
+                pixel = self.compute_color(Ray(Vector3D(0.0, 0.0, 0.0), cam.get_direction(x,y)))
                 self.scene.set_pixel(pixel, x, y)  # save pixel to pixel array
             progress = (x / cam.width) * 100
             print('\r\tProgress: ' + str(progress) + '%', end='')
@@ -61,7 +62,9 @@ class IntersectionIntegrator(Integrator):
 
     def compute_color(self, ray):
         # ASSIGNMENT 1.2: PUT YOUR CODE HERE
-        pass
+        if self.scene.any_hit(ray):
+            return RED
+        return BLACK
 
 
 class DepthIntegrator(Integrator):
@@ -72,7 +75,9 @@ class DepthIntegrator(Integrator):
 
     def compute_color(self, ray):
         # ASSIGNMENT 1.3: PUT YOUR CODE HERE
-        pass
+        hit_data = self.scene.closest_hit(ray)
+        c_i = max(1- (hit_data.hit_distance/self.max_depth), 0)
+        return RGBColor(c_i,c_i,c_i)
 
 
 class NormalIntegrator(Integrator):
@@ -82,7 +87,11 @@ class NormalIntegrator(Integrator):
 
     def compute_color(self, ray):
         # ASSIGNMENT 1.3: PUT YOUR CODE HERE
-        pass
+        hit_data = self.scene.closest_hit(ray)
+        if hit_data.has_hit:
+            colors = (hit_data.normal+Vector3D(1.0,1.0,1.0))/2
+            return RGBColor(colors.x, colors.y, colors.z)
+        return BLACK
 
 
 class PhongIntegrator(Integrator):
@@ -92,7 +101,40 @@ class PhongIntegrator(Integrator):
 
     def compute_color(self, ray):
         # ASSIGNMENT 1.4: PUT YOUR CODE HERE
-        pass
+        hit_data=self.scene.closest_hit(ray)
+
+        if hit_data.has_hit:
+            # We get the labertian BRDF 
+            lambertian = self.scene.object_list[hit_data.primitive_index].get_BRDF()
+
+            # Computing the Amibient Term using k_d from the Lambertian and the ambient intensity (i_a)
+            L_a= lambertian.kd.multiply(self.scene.i_a)
+
+            L_d = RGBColor(0,0,0)
+
+            w_o = ray.d
+
+            for light in self.scene.pointLights:
+
+                # Create a the ray path from the hit point to the light source position
+                w_i = light.pos - hit_data.hit_point
+                ray_l = Ray(hit_data.hit_point, w_i)
+                
+                # Compute the distance between the hit point and the light source position
+                distance = Length(w_i)
+
+                # Computing the closest hitting point of the ray
+                hit_closest = self.scene.closest_hit(ray_l)
+                
+                # Filter not visible points (if not occluded)
+                if not self.scene.any_hit(ray_l) or hit_closest.hit_distance >= distance:
+                    L_i = light.intensity / (distance * distance)
+                    # Computing L_d 
+                    L_d += L_i.multiply(lambertian.get_value(w_i, w_o, hit_data.normal))
+
+            return L_a+L_d
+            
+        return BLACK
 
 
 class CMCIntegrator(Integrator):  # Classic Monte Carlo Integrator
