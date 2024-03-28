@@ -1,3 +1,4 @@
+from cv2 import samples
 from PyRT_Common import *
 import matplotlib.pyplot as plt
 
@@ -23,8 +24,12 @@ def collect_samples(function_list, sample_pos_):
 # ########################################################################################### #
 def compute_estimate_cmc(sample_prob_, sample_values_):
     # TODO: PUT YOUR CODE HERE
+    N = len(sample_values_)
+    I = BLACK
+    for j in range(0,N):
+        I += sample_values_[j]/sample_prob_[j]    
     p = 0
-    return 0
+    return I/N
 
 
 
@@ -78,7 +83,7 @@ ns_min = 20  # minimum number of samples (ns) used for the Monte Carlo estimate
 ns_max = 101  # maximum number of samples (ns) used for the Monte Carlo estimate
 ns_step = 20  # step for the number of samples
 ns_vector = np.arange(start=ns_min, stop=ns_max, step=ns_step)  # the number of samples to use per estimate
-n_estimates = 1  # the number of estimates to perform for each value in ns_vector
+n_estimates = 50  # the number of estimates to perform for each value in ns_vector
 n_samples_count = len(ns_vector)
 
 # Initialize a matrix of estimate error at zero
@@ -89,17 +94,19 @@ results = np.zeros((n_samples_count, n_methods))  # Matrix of average error
 #          MAIN LOOP                #
 # ################################# #
 
-# for each sample count considered
-for k, ns in enumerate(ns_vector):
+for i in range(0,n_estimates):
+    # for each sample count considered
+    for k, ns in enumerate(ns_vector):
 
-    print(f'Computing estimates using {ns} samples')
+        print(f'Computing estimates using {ns} samples')
 
-    # TODO: Estimate the value of the integral using CMC
-    estimate_cmc = 0
-    abs_error = abs(ground_truth - estimate_cmc)
-
-    results[k, 0] = abs_error
-
+        # TODO: Estimate the value of the integral using CMC
+        sample_set, sample_prob = sample_set_hemisphere(ns, uniform_pdf)
+        sample_values = collect_samples(integrand, sample_set)
+        estimate_cmc = compute_estimate_cmc(sample_prob, sample_values).r
+        abs_error = abs(ground_truth - estimate_cmc)
+        results[k, 0] += abs_error
+results[:,0] /= n_estimates 
 
 # ################################################################################################# #
 # Create a plot with the average error for each method, as a function of the number of used samples #
