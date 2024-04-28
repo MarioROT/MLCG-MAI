@@ -95,7 +95,9 @@ class GP:
         # ################## #
         # ADD YOUR CODE HERE #
         # ################## #
-
+        for i, omega_i in enuemrate(self.samples_pos):
+            for j, omega_j in enumerate(self.samples_pos):
+                Q[i,j] = self.cov_func.eval(omega_i, omega_j)
 
         # Add a diagonal of a small amount of noise to avoid numerical instability problems
         Q = Q + np.eye(n, n) * self.noise ** 2
@@ -130,7 +132,7 @@ class GP:
             # ################## #
             # ADD YOUR CODE HERE #
             # ################## #
-
+            z_vec[i] = compute_estimate_cmc(probab, omega_i)
 
 
         return z_vec
