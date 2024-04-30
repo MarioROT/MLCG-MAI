@@ -185,7 +185,40 @@ class BayesianMonteCarloIntegrator(Integrator):
         self.myGP = myGP
 
     def compute_color(self, ray):
-        pass
+        hit_data=self.scene.closest_hit(ray)
+
+        if hit_data.has_hit:
+            kd = self.scene.object_list[hit_data.primitive_index].get_BRDF().kd
+
+            gp = np.random.choice(len(self.myGP))
+            colors = []
+            # For each sample w_j in sample set (S)
+            # for j, w_j in enumerate(self.myGP.samples_pos):
+            for j, w_j in enumerate(self.myGP[gp].samples_pos):
+                # Center the sample around the surface normal. yielding w_j_a
+                w_j_a = center_around_normal(w_j, hit_data.normal)
+                # Create a secondary array r with direction w_j_a
+                r = Ray(origin = hit_data.hit_point, direction = w_j_a)
+                # Computing the closest hitting point of the ray
+                hit_closest = self.scene.closest_hit(r)
+
+                # If r hits the scene geometry, then
+                Li_wj = RGBColor(0,0,0)
+                if hit_closest.has_hit:
+                    Li_wj = self.scene.object_list[hit_closest.primitive_index].emission
+                elif self.scene.env_map:
+                    Li_wj = self.scene.env_map.getValue(w_j_a)
+
+                color = Li_wj.multiply(kd)
+                color = color*Dot(hit_data.normal,w_j_a)
+                colors.append(color)
+            self.myGP[gp].add_sample_val(colors)
+            # self.myGP.add_sample_val(colors)
+            return self.myGP[gp].compute_integral_BMC()
+            # return self.myGP.compute_integral_BMC()
+        elif self.scene.env_map:
+            return self.scene.env_map.getValue(ray.d)
+        return BLACK
 
 def compute_estimate_cmc(sample_prob_, sample_values_):
     # TODO: PUT YOUR CODE HERE

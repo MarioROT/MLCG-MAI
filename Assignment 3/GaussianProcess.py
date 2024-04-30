@@ -95,7 +95,7 @@ class GP:
         # ################## #
         # ADD YOUR CODE HERE #
         # ################## #
-        for i, omega_i in enuemrate(self.samples_pos):
+        for i, omega_i in enumerate(self.samples_pos):
             for j, omega_j in enumerate(self.samples_pos):
                 Q[i,j] = self.cov_func.eval(omega_i, omega_j)
 
@@ -132,8 +132,11 @@ class GP:
             # ################## #
             # ADD YOUR CODE HERE #
             # ################## #
-            z_vec[i] = compute_estimate_cmc(probab, omega_i)
 
+            for sample, prob in zip(sample_set_z, probab):
+                z_vec[i] += (self.p_func.eval(sample)*(self.cov_func.eval(sample, omega_i)))/prob
+            
+            z_vec[i] /= ns_z
 
         return z_vec
 
@@ -144,6 +147,7 @@ class GP:
         # ################## #
         # ADD YOUR CODE HERE #
         # ################## #
-
+        for i, sample in enumerate(self.samples_val):
+            res += sample.__mul__(self.weights[i])
 
         return res

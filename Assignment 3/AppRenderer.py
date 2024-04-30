@@ -1,6 +1,7 @@
 from PyRT_Core import *
 from PyRT_Integrators import *
 import time
+from GaussianProcess import *
 
 
 def sphere_test_scene(areaLS=False, use_env_map=False):
@@ -163,7 +164,7 @@ def cornell_box_scene(dist, side, areaLS=False):
 # --------------------------------------------------Set up variables
 FILENAME = 'rendered_image'
 DIRECTORY = '.\\out\\'
-EXPERIMENT = 'MCforRendering'
+EXPERIMENT = 'BMCforRendering'
 
 # -------------------------------------------------Main
 # Create Integrator
@@ -172,7 +173,14 @@ EXPERIMENT = 'MCforRendering'
 # integrator = DepthIntegrator(DIRECTORY + FILENAME, 5)
 # integrator = NormalIntegrator(DIRECTORY + FILENAME)
 # integrator = PhongIntegrator(DIRECTORY + FILENAME)
-integrator = CMCIntegrator(40, DIRECTORY + FILENAME, EXPERIMENT)
+# integrator = CMCIntegrator(40, DIRECTORY + FILENAME, EXPERIMENT)
+myGPs = []
+for i in range(40):
+    myGP = GP(SobolevCov(),Constant(1))
+    (sample_set, sample_prob) = sample_set_hemisphere(ns,UniformPDF())
+    myGP.add_sample_pos(sample_set)
+    myGPs.append(myGP)
+integrator = BayesianMonteCarloIntegrator(40, myGPs, DIRECTORY + FILENAME, EXPERIMENT)
 
 # Create the scene
 scene = sphere_test_scene(areaLS=False, use_env_map=True)

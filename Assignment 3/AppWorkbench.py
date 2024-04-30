@@ -1,6 +1,7 @@
 from cv2 import samples
 from PyRT_Common import *
 import matplotlib.pyplot as plt
+from GaussianProcess import *
 
 # ############################################################################################## #
 # Given a list of hemispherical functions (function_list) and a set of sample positions over the #
@@ -42,7 +43,7 @@ def compute_estimate_cmc(sample_prob_, sample_values_):
 # STEP 0                                                               #
 # Set-up the name of the used methods, and their marker (for plotting) #
 # #################################################################### #
-methods_label = [('MC', 'o')]
+methods_label = [('MC', 'o'), ('BMC', 'x')]
 # methods_label = [('MC', 'o'), ('MC IS', 'v'), ('BMC', 'x'), ('BMC IS', '1')] # for later practices
 n_methods = len(methods_label) # number of tested monte carlo methods
 
@@ -84,6 +85,7 @@ ns_max = 101  # maximum number of samples (ns) used for the Monte Carlo estimate
 ns_step = 20  # step for the number of samples
 ns_vector = np.arange(start=ns_min, stop=ns_max, step=ns_step)  # the number of samples to use per estimate
 n_estimates = 50  # the number of estimates to perform for each value in ns_vector
+n_estimatesBMC = 10  # the number of estimates to perform for each value in ns_vector
 n_samples_count = len(ns_vector)
 
 # Initialize a matrix of estimate error at zero
@@ -97,8 +99,7 @@ results = np.zeros((n_samples_count, n_methods))  # Matrix of average error
 for i in range(0,n_estimates):
     # for each sample count considered
     for k, ns in enumerate(ns_vector):
-
-        print(f'Computing estimates using {ns} samples')
+        print(f'CMC - Computing estimates using {ns} samples')
 
         # TODO: Estimate the value of the integral using CMC
         sample_set, sample_prob = sample_set_hemisphere(ns, uniform_pdf)
@@ -107,6 +108,23 @@ for i in range(0,n_estimates):
         abs_error = abs(ground_truth - estimate_cmc)
         results[k, 0] += abs_error
 results[:,0] /= n_estimates 
+
+
+for i in range(0,n_estimatesBMC):
+    # for each sample count considered
+    for k, ns in enumerate(ns_vector):
+        print(f'BMC - Computing estimates using {ns} samples')
+
+        # TODO: Estimate the value of the integral using CMC
+        sample_set, sample_prob = sample_set_hemisphere(ns, uniform_pdf)
+        sample_values = collect_samples(integrand, sample_set)
+        gaussP = GP(SobolevCov(), Constant(1))
+        gaussP.add_sample_pos(sample_set)
+        gaussP.add_sample_val(sample_values)
+        estimate_cmc = gaussP.compute_integral_BMC().r
+        abs_error = abs(ground_truth - estimate_cmc)
+        results[k, 1] += abs_error
+results[:,1] /= n_estimatesBMC
 
 # ################################################################################################# #
 # Create a plot with the average error for each method, as a function of the number of used samples #
