@@ -177,7 +177,7 @@ EXPERIMENT = 'BMCforRendering'
 myGPs = []
 for i in range(40):
     myGP = GP(SobolevCov(),Constant(1))
-    (sample_set, sample_prob) = sample_set_hemisphere(ns,UniformPDF())
+    (sample_set, sample_prob) = sample_set_hemisphere(40,UniformPDF())
     myGP.add_sample_pos(sample_set)
     myGPs.append(myGP)
 integrator = BayesianMonteCarloIntegrator(40, myGPs, DIRECTORY + FILENAME, EXPERIMENT)
