@@ -195,6 +195,9 @@ class BayesianMonteCarloIntegrator(Integrator):
             # For each sample w_j in sample set (S)
             # for j, w_j in enumerate(self.myGP.samples_pos):
             for j, w_j in enumerate(self.myGP[gp].samples_pos):
+                # Random rotation around the Y-AXIS to the original sample set
+                rotA = np.random.random()*2*np.pi
+                w_j = rotate_around_y(rotA,w_j)
                 # Center the sample around the surface normal. yielding w_j_a
                 w_j_a = center_around_normal(w_j, hit_data.normal)
                 # Create a secondary array r with direction w_j_a
